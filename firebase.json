@@ -1,1 +1,13 @@
-{}
+{
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true
+    },
+    "database": {
+      "port": 3001
+    }
+  }
+}

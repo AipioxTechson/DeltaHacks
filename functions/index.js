@@ -14,6 +14,7 @@ authDomain: "deltahacks-d105e.firebaseapp.com",
 const cors = require('cors');
 const express = require('express');
 const bodyParser = require("body-parser");
+const e = require("express");
 
 const app = express();
 
@@ -22,6 +23,11 @@ app.use(bodyParser.json());
 
 var db=admin.database();
 
+const getCurrentDateFormatted = () => {
+  const dt = new Date();
+  const date = dt.getFullYear() + "-" + (dt.getMonth() + 1) + "-" + dt.getDate();
+  return date;
+}
 
 //Helper functions
 const login = (username,password, res) => {
@@ -70,6 +76,10 @@ const signUp = (username,password,res) => {
                   res.status(500).json({"msg": "Something went wrong.", "error": "OOPS"});
                 }else {
                   db.ref(`points/${username}`).set(0)
+                  const historyRef = db.ref(`history/${username}/${getCurrentDateFormatted()}`).push();
+                  historyRef.set({
+                      type: "DATE_CREATED"
+                  })
                   res.json({"msg": "Sucessfully created user"});
                 }
               })
@@ -79,10 +89,29 @@ const signUp = (username,password,res) => {
       })
     }
   });
-  
 }
 
+const addToHistory = (username, payload, res) => {
+  const historyRef = db.ref(`history/${username}`);
+  const date = getCurrentDateFormatted();
+  historyRef.once('value', snapshot => {
+    if (snapshot.exists()) {
+      const dateRef = db.ref(`history/${username}/${date}`).push();
+      dateRef.set({
+        ...payload
+      }, (err) => {
+        if (err){
+          res.status(500).json({"msg": "Something went wrong.", "error": "OOPS"});
+        } else{
+          res.json({"msg": "Success"});
+        }
+      });
 
+    } else {
+      res.status(400).json({"msg": "Could not find username", "error": "NOT_FOUND"});
+    }
+  })
+}
 
 //END POINTS
 app.get('/login', (req,res) => {
@@ -102,6 +131,23 @@ app.post('/signup', (req,res) => {
   }
 });
 
+app.get('/:userId/history',(req,res) => {
+  const { userId } = req.params;
+  if (!userId) {
+    res.status(400).json({"msg": "Something went wrong", "error": "Missing required params"});
+  } else {
+    //accessHistory(userId, req.query.date);
+  }
+});
+
+app.patch('/:username/history',(req,res) => {
+  const { username } = req.params;
+  if (!username) {
+    res.status(400).json({"msg": "Something went wrong", "error": "Missing required params"});
+  } else {
+    addToHistory(username, req.body, res);
+  }
+});
 //End points schema
 // signup - create User, accepts username, password, stores salt and password
 // login - find a user and check if passwords match

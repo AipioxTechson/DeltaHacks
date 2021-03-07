@@ -97,6 +97,8 @@ const addToHistory = (username, {type, points, ...payload}, res) => {
     if (snapshot.exists()) {
       const dateRef = db.ref(`history/${username}/${date}`).push();
       dateRef.set({
+        type,
+        points,
         ...payload
       }, (err) => {
         if (err){

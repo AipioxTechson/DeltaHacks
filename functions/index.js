@@ -97,7 +97,7 @@ const addToHistory = (username, {type, points, ...payload}, res) => {
     if (snapshot.exists()) {
       const dateRef = db.ref(`history/${username}/${date}`).push();
       dateRef.set({
-        type,
+        type: type === 'GIVE_POINTS' ? 'INCREASE_CARBON_SCORE' : type,
         points,
         ...payload
       }, (err) => {
@@ -169,7 +169,7 @@ app.get('/:username/history',(req,res) => {
   }
 });
 
-app.patch('/:username/history',(req,res) => {
+app.post('/:username/history',(req,res) => {
   const { username } = req.params;
   if (!username) {
     res.status(400).json({"msg": "Something went wrong", "error": "Missing required params"});

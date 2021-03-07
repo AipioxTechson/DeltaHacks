@@ -98,7 +98,7 @@ const addToHistory = (username, {type, points, ...payload}, res) => {
       const dateRef = db.ref(`history/${username}/${date}`).push();
       dateRef.set({
         type: type === 'GIVE_POINTS' ? 'INCREASE_CARBON_SCORE' : type,
-        points,
+        ...(type === 'GIVE_POINTS' ? { points } : {}),
         ...payload
       }, (err) => {
         if (err){

@@ -14,7 +14,6 @@ authDomain: "deltahacks-d105e.firebaseapp.com",
 const cors = require('cors');
 const express = require('express');
 const bodyParser = require("body-parser");
-const e = require("express");
 
 const app = express();
 
@@ -91,7 +90,7 @@ const signUp = (username,password,res) => {
   });
 }
 
-const addToHistory = (username, payload, res) => {
+const addToHistory = (username, {type, points, ...payload}, res) => {
   const historyRef = db.ref(`history/${username}`);
   const date = getCurrentDateFormatted();
   historyRef.once('value', snapshot => {
@@ -103,6 +102,10 @@ const addToHistory = (username, payload, res) => {
         if (err){
           res.status(500).json({"msg": "Something went wrong.", "error": "OOPS"});
         } else{
+          if (type === 'GIVE_POINTS'){
+            const pointsRef = db.ref(`points/${username}`);
+            pointsRef.set(admin.database.ServerValue.increment(points));
+          }
           res.json({"msg": "Success"});
         }
       });
@@ -112,6 +115,30 @@ const addToHistory = (username, payload, res) => {
     }
   })
 }
+
+const accessHistory = (username, date, res) => {
+  if (date) {
+    const historyRef = db.ref(`history/${username}/${date}`);
+    historyRef.once('value', snapshot => {
+      if (snapshot.exists()){
+        res.json({"msg": "Success", data: snapshot.val()});
+      }else {
+        res.status(400).json({"msg": "Could not find date", "error": "NOT_FOUND"});
+      }
+    });
+  } else {
+    const historyRef = db.ref(`history/${username}`);
+    historyRef.once('value', snapshot => {
+      if (snapshot.exists()){
+        res.json({"msg": "Success", data: snapshot.val()});
+      }else {
+        res.status(400).json({"msg": "Could not find date", "error": "NOT_FOUND"});
+      }
+    });
+  }
+
+
+};
 
 //END POINTS
 app.get('/login', (req,res) => {
@@ -131,12 +158,12 @@ app.post('/signup', (req,res) => {
   }
 });
 
-app.get('/:userId/history',(req,res) => {
-  const { userId } = req.params;
-  if (!userId) {
+app.get('/:username/history',(req,res) => {
+  const { username } = req.params;
+  if (!username) {
     res.status(400).json({"msg": "Something went wrong", "error": "Missing required params"});
   } else {
-    //accessHistory(userId, req.query.date);
+    accessHistory(username, req.query.date, res);
   }
 });
 
